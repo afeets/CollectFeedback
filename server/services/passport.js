@@ -6,6 +6,17 @@ const mongoose = require('mongoose');
 // fetch from mongoose
 const User = mongoose.model('users');
 
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser((id, done) => {
+    User.findById(id)
+        .then(user => {
+            done(null, user);
+        })
+});
+
 // add strategy, requires client ID, and client secret
 passport.use(
     new GoogleStrategy({
@@ -19,8 +30,21 @@ passport.use(
         console.log('profile',profile);
         */
 
-        
-        new User({ googleId: profile.id }).save()
+        // query User Collection to find if user already exists, returns promise
+        User.findOne({ googleId: profile.id })
+        .then(( existingUser ) => {
+            if (existingUser){
+                // record already exists
+                done(null, existingUser);
+            }
+            else {
+                // create new record
+                new User({ googleId: profile.id })
+                    .save()
+                    .then( user => done(null, user ));
+
+            }
+        });
     })
 );
 
